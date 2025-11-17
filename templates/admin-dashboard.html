@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Returns & Refunds System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">⚙️ Admin Dashboard</div>
+            <ul class="nav-links">
+                <li><a href="/">Store</a></li>
+                <li><a href="admin-dashboard.html">Dashboard</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h1 class="card-header">Admin Dashboard</h1>
+            <p id="admin-welcome">Welcome, Administrator!</p>
+        </div>
+
+        <div class="card">
+            <h2 class="card-header">Analytics</h2>
+            <div id="analytics-container">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-header">Return Requests</h2>
+            <div id="returns-container">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-header">Notifications</h2>
+            <div id="notifications-container">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/admin-dashboard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = getUser();
+            if (user) {
+                document.getElementById('admin-welcome').textContent = `Welcome, ${user.name}!`;
+            }
+        });
+    </script>
+</body>
+</html>
+

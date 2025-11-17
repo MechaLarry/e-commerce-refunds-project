@@ -1,0 +1,19 @@
+# Environment Variables Configuration
+# Copy these to your system environment or create a .env file
+
+# Database Configuration
+# Format: mysql+pymysql://username:password@host:port/database_name
+DATABASE_URL=mysql+pymysql://root:password@localhost/refunds_db
+
+# JWT Secret Key (Change this in production!)
+JWT_SECRET_KEY=your-secret-key-change-in-production
+
+# Flask Configuration (optional)
+FLASK_ENV=development
+FLASK_DEBUG=True
+
+# Instructions:
+# Windows PowerShell: $env:DATABASE_URL="mysql+pymysql://root:password@localhost/refunds_db"
+# Windows CMD: set DATABASE_URL=mysql+pymysql://root:password@localhost/refunds_db
+# Linux/Mac: export DATABASE_URL="mysql+pymysql://root:password@localhost/refunds_db"
+

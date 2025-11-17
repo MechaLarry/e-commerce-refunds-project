@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard - Returns & Refunds System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">🛍️ Customer Dashboard</div>
+            <ul class="nav-links">
+                <li><a href="/">Store</a></li>
+                <li><a href="customer-dashboard.html">Dashboard</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h1 class="card-header">My Dashboard</h1>
+            <p id="user-welcome">Welcome back!</p>
+        </div>
+
+        <div class="card">
+            <h2 class="card-header">My Orders</h2>
+            <div id="orders-container">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-header">My Return Requests</h2>
+            <div id="returns-container">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-header">Notifications</h2>
+            <div id="notifications-container">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return Request Modal -->
+    <div id="return-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Request Return</h2>
+                <span class="close" onclick="closeModal('return-modal')">&times;</span>
+            </div>
+            <form onsubmit="submitReturnRequest(); return false;">
+                <input type="hidden" id="return-order-id">
+                <div class="form-group">
+                    <label for="return-reason">Return Reason:</label>
+                    <textarea id="return-reason" class="form-control" rows="4" required placeholder="Please explain why you want to return this item..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Return Request</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/customer-dashboard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = getUser();
+            if (user) {
+                document.getElementById('user-welcome').textContent = `Welcome, ${user.name}!`;
+            }
+        });
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+

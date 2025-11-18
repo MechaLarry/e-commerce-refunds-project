@@ -182,12 +182,15 @@ function redirectByRole() {
             return;
         }
         
-        // Redirect based on role
-        if (user.role === 'admin') {
+        // Redirect based on role (check both 'admin' and case variations)
+        const userRole = (user.role || '').toLowerCase();
+        console.log('User role for redirect:', userRole);
+        
+        if (userRole === 'admin') {
             console.log('Redirecting to admin dashboard');
             window.location.href = 'admin-dashboard.html';
         } else {
-            console.log('Redirecting to customer dashboard');
+            console.log('Redirecting to customer dashboard (role:', userRole, ')');
             window.location.href = 'customer-dashboard.html';
         }
     }, 500); // Increased delay to ensure localStorage persistence

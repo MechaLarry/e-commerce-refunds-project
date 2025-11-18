@@ -236,7 +236,7 @@ def login():
                         'id': admin.admin_id,
                         'name': f"{admin.first_name} {admin.last_name}",
                         'email': admin.email,
-                        'role': admin.role
+                        'role': 'admin'  # Always use 'admin' for role check, not admin.role (which is 'Manager')
                     }
                 }), 200
         else:

@@ -240,8 +240,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Check if user is admin (should be on admin dashboard)
-        if (user.role === 'admin') {
+        // Check if user is admin (should be on admin dashboard) - case-insensitive
+        const userRole = (user.role || '').toLowerCase();
+        if (userRole === 'admin') {
             console.log('User is admin, redirecting to admin dashboard');
             redirecting = true;
             window.location.href = 'admin-dashboard.html';

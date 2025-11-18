@@ -316,9 +316,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Check if user is admin
-        if (user.role !== 'admin') {
-            console.log('User is not admin, redirecting to customer dashboard');
+        // Check if user is admin (case-insensitive check)
+        const userRole = (user.role || '').toLowerCase();
+        console.log('Checking user role:', user.role, 'Normalized:', userRole);
+        
+        if (userRole !== 'admin') {
+            console.log('User is not admin (role:', userRole, '), redirecting to customer dashboard');
             redirecting = true;
             window.location.href = 'customer-dashboard.html';
             return;

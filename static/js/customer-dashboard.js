@@ -10,6 +10,7 @@ async function loadDashboard() {
     
     // Load data sequentially to avoid overwhelming the server
     try {
+        await loadWallet();
         await loadOrders();
         await loadReturnRequests();
         await loadNotifications();
@@ -17,6 +18,57 @@ async function loadDashboard() {
         console.error('Error loading dashboard:', error);
         // Don't redirect on API errors - just log them
     }
+}
+
+// Load wallet
+async function loadWallet() {
+    const container = document.getElementById('wallet-container');
+    if (!container) return;
+
+    try {
+        const data = await apiRequest('/wallet');
+        displayWallet(data);
+    } catch (error) {
+        console.error('Failed to load wallet:', error);
+        container.innerHTML = `
+            <div style="text-align: center; padding: 1.5rem; color: #dc3545;">
+                <p>Failed to load wallet: ${error.message || 'Unknown error'}</p>
+            </div>
+        `;
+    }
+}
+
+function displayWallet(data) {
+    const container = document.getElementById('wallet-container');
+    if (!container) return;
+
+    const balance = data && typeof data.balance === 'number' ? data.balance : 0;
+
+    container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <p style="margin: 0; color: #666;">Available Wallet Balance</p>
+                <p style="margin: 0.25rem 0 0 0; font-size: 2rem; font-weight: bold; color: #667eea;">
+                    $${balance.toFixed(2)}
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                <input
+                    type="number"
+                    id="wallet-topup-amount"
+                    class="form-control"
+                    placeholder="Amount"
+                    min="1"
+                    step="1"
+                    style="max-width: 150px;"
+                />
+                <button class="btn btn-primary btn-small" onclick="topUpWalletFromInput()">Add Funds</button>
+            </div>
+        </div>
+        <p style="margin-top: 0.75rem; color: #666; font-size: 0.9rem;">
+            This wallet simulates a global payment platform. Refunds for approved return requests are credited back here. You can add dummy funds as many times as you need.
+        </p>
+    `;
 }
 
 // Load orders
@@ -209,6 +261,48 @@ function showAlert(message, type = 'info') {
         container.insertBefore(alertDiv, container.firstChild);
         setTimeout(() => alertDiv.remove(), 5000);
     }
+}
+
+// Wallet top-up helpers
+async function topUpWallet(amount) {
+    try {
+        const response = await apiRequest('/wallet/topup', {
+            method: 'POST',
+            body: JSON.stringify({ amount })
+        });
+        showAlert(`Wallet topped up successfully! New balance: $${response.balance.toFixed(2)}`, 'success');
+        loadWallet();
+    } catch (error) {
+        console.error('Wallet top-up error:', error);
+        showAlert(error.message || 'Failed to top up wallet', 'error');
+    }
+}
+
+function topUpWalletFromInput() {
+    const input = document.getElementById('wallet-topup-amount');
+    if (!input) {
+        topUpWalletCustom();
+        return;
+    }
+    const amount = parseFloat(input.value);
+    if (isNaN(amount) || amount <= 0) {
+        showAlert('Please enter a valid amount greater than zero', 'error');
+        return;
+    }
+    topUpWallet(amount);
+    input.value = '';
+}
+
+// Fallback prompt-based top-up if needed elsewhere
+function topUpWalletCustom() {
+    const amountStr = prompt('Enter amount to add to your wallet:');
+    if (!amountStr) return;
+    const amount = parseFloat(amountStr);
+    if (isNaN(amount) || amount <= 0) {
+        showAlert('Please enter a valid amount greater than zero', 'error');
+        return;
+    }
+    topUpWallet(amount);
 }
 
 // Initialize

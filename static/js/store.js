@@ -58,7 +58,7 @@ function addToCart(productId) {
     
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartCount();
-    showAlert('Product added to cart!', 'success');
+    openAddToCartModal(product);
 }
 
 // Update cart count
@@ -161,54 +161,46 @@ async function checkout() {
         return;
     }
     
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
-    // Create a better checkout form
-    const shippingAddress = prompt('Enter your shipping address:', '');
-    if (!shippingAddress || shippingAddress.trim() === '') {
-        showAlert('Shipping address is required', 'error');
-        return;
+    // Close cart modal and navigate to dedicated checkout page
+    const modal = document.getElementById('cart-modal');
+    if (modal) {
+        modal.style.display = 'none';
     }
-    
-    // Show loading state
-    const checkoutBtn = document.querySelector('#cart-modal .btn-primary');
-    const originalText = checkoutBtn ? checkoutBtn.textContent : 'Checkout';
-    if (checkoutBtn) {
-        checkoutBtn.disabled = true;
-        checkoutBtn.textContent = 'Processing...';
-    }
-    
-    try {
-        const response = await apiRequest('/orders', {
-            method: 'POST',
-            body: JSON.stringify({
-                total_amount: total,
-                shipping_address: shippingAddress.trim()
-            })
-        });
-        
-        cart = [];
-        localStorage.setItem('cart', JSON.stringify(cart));
-        updateCartCount();
-        document.getElementById('cart-modal').style.display = 'none';
-        showAlert(`✅ Order placed successfully! Order ID: ${response.order_id}`, 'success');
-        
-        setTimeout(() => {
-            window.location.href = 'customer-dashboard.html';
-        }, 1500);
-    } catch (error) {
-        console.error('Checkout error:', error);
-        if (checkoutBtn) {
-            checkoutBtn.disabled = false;
-            checkoutBtn.textContent = originalText;
-        }
-        showAlert(error.message || 'Failed to place order. Please try again.', 'error');
-    }
+    window.location.href = 'checkout.html';
 }
 
 // Close modal
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
+}
+
+// Add-to-cart confirmation modal
+function openAddToCartModal(product) {
+    const modal = document.getElementById('add-to-cart-modal');
+    if (!modal) return;
+
+    const titleEl = document.getElementById('add-to-cart-product');
+    if (titleEl && product && product.title) {
+        titleEl.textContent = product.title;
+    }
+
+    modal.style.display = 'block';
+}
+
+function closeAddToCartModal() {
+    const modal = document.getElementById('add-to-cart-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function continueShopping() {
+    closeAddToCartModal();
+}
+
+function goToCart() {
+    closeAddToCartModal();
+    viewCart();
 }
 
 // Show alert

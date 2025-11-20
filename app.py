@@ -4,6 +4,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
+from decimal import Decimal
 import os
 from functools import wraps
 import requests
@@ -25,11 +26,15 @@ app.config['JWT_ALGORITHM'] = 'HS256'
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
-CORS(app, 
-     supports_credentials=True, 
-     allow_headers=['Content-Type', 'Authorization'],
-     origins=['http://localhost:5000', 'http://127.0.0.1:5000', '*'],
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+CORS(
+    app,
+    resources={r"/api/*": {
+        "origins": ["http://localhost:5000", "http://127.0.0.1:5000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }}
+)
 
 # Request logging middleware
 @app.before_request
@@ -133,6 +138,13 @@ class PaymentTransaction(db.Model):
     payment_method = db.Column(db.String(50), nullable=False)
     refund = db.relationship('Refund', backref='payment_transactions')
 
+class Wallet(db.Model):
+    __tablename__ = 'wallets'
+    wallet_id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.customer_id'), nullable=False, unique=True)
+    balance = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    customer = db.relationship('Customer', backref='wallet', uselist=False)
+
 # Helper Functions
 def admin_required(f):
     @wraps(f)
@@ -143,6 +155,15 @@ def admin_required(f):
             return jsonify({'message': 'Admin access required'}), 403
         return f(*args, **kwargs)
     return decorated
+
+def get_or_create_wallet(customer_id):
+    """Get or create a wallet for the given customer."""
+    wallet = Wallet.query.filter_by(customer_id=customer_id).first()
+    if not wallet:
+        wallet = Wallet(customer_id=customer_id, balance=0)
+        db.session.add(wallet)
+        db.session.commit()
+    return wallet
 
 def calculate_fraud_score(customer_id, order_id):
     """Calculate fraud score based on return patterns"""
@@ -504,10 +525,17 @@ def approve_return_request(request_id):
     transaction.transaction_status = 'Completed'
     db.session.commit()
     
+    # Credit refund amount to customer's wallet (dummy global payment platform)
+    wallet = get_or_create_wallet(return_request.customer_id)
+    refund_amount_decimal = Decimal(str(refund.refund_amount)) if refund.refund_amount is not None else Decimal('0')
+    wallet.balance = (wallet.balance or Decimal('0')) + refund_amount_decimal
+    db.session.commit()
+    
     # Create notifications
     create_notification(
         return_request.customer_id, 'customer',
-        f'Your return request #{return_request.return_request_id} has been approved. Refund of ${float(refund.refund_amount)} has been processed.',
+        f'Your return request #{return_request.return_request_id} has been approved. '
+        f'Refund of ${float(refund.refund_amount)} has been processed and credited to your wallet.',
         'Return Request Approved'
     )
     
@@ -566,6 +594,64 @@ def get_refunds():
         'payment_status': r.payment_status,
         'payment_method': r.payment_method
     } for r in refunds]), 200
+
+@app.route('/api/wallet', methods=['GET'])
+@jwt_required()
+def get_wallet():
+    """Get the current customer's wallet balance."""
+    claims = get_jwt()
+    if claims.get('role') != 'customer':
+        return jsonify({'message': 'Wallet is only available for customers'}), 403
+
+    customer_id_str = get_jwt_identity()
+    customer_id = int(customer_id_str) if customer_id_str else None
+    if not customer_id:
+        return jsonify({'message': 'Invalid token'}), 401
+
+    wallet = Wallet.query.filter_by(customer_id=customer_id).first()
+    balance = float(wallet.balance) if wallet and wallet.balance is not None else 0.0
+
+    return jsonify({
+        'customer_id': customer_id,
+        'balance': balance
+    }), 200
+
+@app.route('/api/wallet/topup', methods=['POST'])
+@jwt_required()
+def topup_wallet():
+    """Add dummy funds to the customer's wallet (simulated global payment)."""
+    claims = get_jwt()
+    if claims.get('role') != 'customer':
+        return jsonify({'message': 'Wallet top-up is only available for customers'}), 403
+
+    customer_id_str = get_jwt_identity()
+    customer_id = int(customer_id_str) if customer_id_str else None
+    if not customer_id:
+        return jsonify({'message': 'Invalid token'}), 401
+
+    data = request.get_json() or {}
+    try:
+        amount = Decimal(str(data.get('amount', 0)))
+    except Exception:
+        return jsonify({'message': 'Invalid amount value'}), 400
+    if amount <= 0:
+        return jsonify({'message': 'Top-up amount must be greater than zero'}), 400
+
+    wallet = get_or_create_wallet(customer_id)
+    current_balance = wallet.balance or Decimal('0')
+    wallet.balance = current_balance + amount
+    db.session.commit()
+
+    create_notification(
+        customer_id, 'customer',
+        f'Your wallet has been topped up with ${float(amount):.2f}. New balance: ${float(wallet.balance):.2f}.',
+        'Wallet Top-Up'
+    )
+
+    return jsonify({
+        'message': 'Wallet topped up successfully',
+        'balance': float(wallet.balance)
+    }), 200
 
 # API Routes - Notifications
 @app.route('/api/notifications', methods=['GET'])
